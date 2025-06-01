@@ -50,7 +50,7 @@ func (uc *RestaurantUseCase) SearchNearby(ctx context.Context, params *domain.Re
 					logger.Warn("儲存外部餐廳失敗", zap.Error(err), zap.String("name", restaurant.Name))
 				}
 			}
-			
+
 			// 重新搜尋
 			restaurants, err = uc.restaurantRepo.SearchNearby(ctx, params)
 			if err != nil {
@@ -59,7 +59,7 @@ func (uc *RestaurantUseCase) SearchNearby(ctx context.Context, params *domain.Re
 		}
 	}
 
-	logger.Info("搜尋附近餐廳完成", 
+	logger.Info("搜尋附近餐廳完成",
 		zap.Float64("latitude", params.Latitude),
 		zap.Float64("longitude", params.Longitude),
 		zap.Int("radius", params.Radius),
@@ -165,4 +165,23 @@ func (uc *RestaurantUseCase) GetAllRestaurants(ctx context.Context, limit, offse
 	}
 
 	return restaurants, nil
+}
+
+// UpdateRestaurant 更新餐廳資訊（管理功能）
+func (uc *RestaurantUseCase) UpdateRestaurant(ctx context.Context, restaurant *domain.Restaurant) error {
+	// 檢查餐廳是否存在
+	_, err := uc.restaurantRepo.GetByID(ctx, restaurant.ID)
+	if err != nil {
+		logger.Error("餐廳不存在", zap.Error(err), zap.Int("restaurant_id", restaurant.ID))
+		return errors.New("餐廳不存在")
+	}
+
+	// 更新餐廳資訊
+	if err := uc.restaurantRepo.Update(ctx, restaurant); err != nil {
+		logger.Error("更新餐廳失敗", zap.Error(err), zap.Int("restaurant_id", restaurant.ID))
+		return errors.New("更新餐廳失敗")
+	}
+
+	logger.Info("更新餐廳成功", zap.String("name", restaurant.Name), zap.Int("id", restaurant.ID))
+	return nil
 }

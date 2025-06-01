@@ -24,24 +24,24 @@ type Advertisement struct {
 
 // AdClick 廣告點擊記錄
 type AdClick struct {
-	ID            int       `json:"id" db:"id"`
-	AdvertisementID int     `json:"advertisement_id" db:"advertisement_id"`
-	UserID        int       `json:"user_id" db:"user_id"`
-	GameSessionID string    `json:"game_session_id" db:"game_session_id"`
-	ClickedAt     time.Time `json:"clicked_at" db:"clicked_at"`
-	IPAddress     string    `json:"ip_address" db:"ip_address"`
-	UserAgent     string    `json:"user_agent" db:"user_agent"`
+	ID              int       `json:"id" db:"id"`
+	AdvertisementID int       `json:"advertisement_id" db:"advertisement_id"`
+	UserID          int       `json:"user_id" db:"user_id"`
+	GameSessionID   string    `json:"game_session_id" db:"game_session_id"`
+	ClickedAt       time.Time `json:"clicked_at" db:"clicked_at"`
+	IPAddress       string    `json:"ip_address" db:"ip_address"`
+	UserAgent       string    `json:"user_agent" db:"user_agent"`
 }
 
 // AdView 廣告瀏覽記錄
 type AdView struct {
-	ID            int       `json:"id" db:"id"`
-	AdvertisementID int     `json:"advertisement_id" db:"advertisement_id"`
-	UserID        int       `json:"user_id" db:"user_id"`
-	GameSessionID string    `json:"game_session_id" db:"game_session_id"`
-	ViewedAt      time.Time `json:"viewed_at" db:"viewed_at"`
-	IPAddress     string    `json:"ip_address" db:"ip_address"`
-	UserAgent     string    `json:"user_agent" db:"user_agent"`
+	ID              int       `json:"id" db:"id"`
+	AdvertisementID int       `json:"advertisement_id" db:"advertisement_id"`
+	UserID          int       `json:"user_id" db:"user_id"`
+	GameSessionID   string    `json:"game_session_id" db:"game_session_id"`
+	ViewedAt        time.Time `json:"viewed_at" db:"viewed_at"`
+	IPAddress       string    `json:"ip_address" db:"ip_address"`
+	UserAgent       string    `json:"user_agent" db:"user_agent"`
 }
 
 // CreateAdRequest 建立廣告請求
@@ -61,6 +61,8 @@ type AdStatistics struct {
 	AdvertisementID int     `json:"advertisement_id"`
 	ViewCount       int     `json:"view_count"`
 	ClickCount      int     `json:"click_count"`
-	CTR             float64 `json:"ctr"` // Click Through Rate
-	Period          string  `json:"period"` // daily, weekly, monthly
+	UniqueViewers   int     `json:"unique_viewers"`  // 獨立瀏覽用戶數
+	UniqueClickers  int     `json:"unique_clickers"` // 獨立點擊用戶數
+	CTR             float64 `json:"ctr"`             // Click Through Rate
+	Period          string  `json:"period"`          // daily, weekly, monthly
 }

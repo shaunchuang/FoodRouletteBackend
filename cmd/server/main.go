@@ -1,13 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq" // PostgreSQL 驅動程式
 	"github.com/shaunchuang/food-roulette-backend/internal/config"
 	"github.com/shaunchuang/food-roulette-backend/internal/delivery/http"
 	"github.com/shaunchuang/food-roulette-backend/internal/delivery/http/handler"
+	"github.com/shaunchuang/food-roulette-backend/internal/repository/postgresql"
 	"github.com/shaunchuang/food-roulette-backend/internal/usecase"
+	"github.com/shaunchuang/food-roulette-backend/pkg/auth"
+	"github.com/shaunchuang/food-roulette-backend/pkg/external"
 	"github.com/shaunchuang/food-roulette-backend/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -33,43 +38,48 @@ func main() {
 	// 建立 Gin 引擎
 	engine := gin.New()
 
-	// TODO: 初始化資料庫連接
-	// db, err := sql.Open("postgres", cfg.Database.GetDSN())
-	// if err != nil {
-	//     logger.Fatal("資料庫連接失敗", zap.Error(err))
-	// }
-	// defer db.Close()
+	// 初始化資料庫連接
+	db, err := sql.Open("postgres", cfg.Database.GetDSN())
+	if err != nil {
+		logger.Fatal("資料庫連接失敗", zap.Error(err))
+	}
+	defer db.Close()
 
-	// TODO: 初始化 Repositories
-	// userRepo := postgresql.NewUserRepository(db)
-	// restaurantRepo := postgresql.NewRestaurantRepository(db)
-	// favoriteRepo := postgresql.NewFavoriteRepository(db)
-	// gameRepo := postgresql.NewGameRepository(db)
-	// adRepo := postgresql.NewAdvertisementRepository(db)
+	// 測試資料庫連接
+	if err := db.Ping(); err != nil {
+		logger.Fatal("資料庫連接測試失敗", zap.Error(err))
+	}
+	logger.Info("資料庫連接成功")
 
-	// TODO: 初始化 Services
-	// authService := auth.NewJWTService(cfg.Auth.Secret)
-	// externalAPIService := external.NewGooglePlacesService(cfg.GoogleAPI.Key)
+	// 初始化 Repositories
+	userRepo := postgresql.NewUserRepository(db)
+	restaurantRepo := postgresql.NewRestaurantRepository(db)
+	favoriteRepo := postgresql.NewFavoriteRepository(db)
+	gameRepo := postgresql.NewGameRepository(db)
+	adRepo := postgresql.NewAdvertisementRepository(db)
 
-	// TODO: 初始化 Use Cases
-	// userUseCase := usecase.NewUserUseCase(userRepo, authService)
-	// restaurantUseCase := usecase.NewRestaurantUseCase(restaurantRepo, favoriteRepo, externalAPIService)
-	// gameUseCase := usecase.NewGameUseCase(gameRepo, restaurantRepo, favoriteRepo, adRepo)
+	// 初始化 Services
+	authService := auth.NewJWTService(cfg.Auth.Secret)
+	var externalAPIService usecase.ExternalAPIService
+	if cfg.GoogleAPI.PlacesAPIKey != "" {
+		externalAPIService = external.NewGooglePlacesService(cfg.GoogleAPI.PlacesAPIKey)
+	}
 
-	// 暫時建立空的 Use Cases（之後會實作真正的依賴注入）
-	var userUseCase *usecase.UserUseCase
-	var restaurantUseCase *usecase.RestaurantUseCase
-	var gameUseCase *usecase.GameUseCase
+	// 初始化 Use Cases
+	userUseCase := usecase.NewUserUseCase(userRepo, authService)
+	restaurantUseCase := usecase.NewRestaurantUseCase(restaurantRepo, favoriteRepo, externalAPIService)
+	gameUseCase := usecase.NewGameUseCase(gameRepo, restaurantRepo, favoriteRepo, adRepo)
+	adUseCase := usecase.NewAdvertisementUseCase(adRepo)
 
 	// 初始化 Handlers
 	userHandler := handler.NewUserHandler(userUseCase)
 	restaurantHandler := handler.NewRestaurantHandler(restaurantUseCase)
 	gameHandler := handler.NewGameHandler(gameUseCase)
-	adHandler := handler.NewAdvertisementHandler()
+	adHandler := handler.NewAdvertisementHandler(adUseCase)
 
 	// 初始化路由器
 	router := http.NewRouter(userHandler, restaurantHandler, gameHandler, adHandler)
-	router.SetupRoutes(engine)
+	router.SetupRoutes(engine, authService, userUseCase)
 
 	// 啟動伺服器
 	serverAddr := cfg.Server.Host + ":" + cfg.Server.Port

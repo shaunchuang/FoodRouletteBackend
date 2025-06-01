@@ -17,16 +17,17 @@ const (
 
 // GameSession 遊戲會話
 type GameSession struct {
-	ID           string                   `json:"id" db:"id"`                       // UUID
-	UserID       int                      `json:"user_id" db:"user_id"`
-	GameType     GameType                 `json:"game_type" db:"game_type"`
-	Status       string                   `json:"status" db:"status"`               // pending, playing, completed
-	Result       *RestaurantWithDistance  `json:"result"`                           // 遊戲結果
-	Restaurants  []RestaurantWithDistance `json:"restaurants"`                      // 參與遊戲的餐廳列表
-	Advertisements []Advertisement        `json:"advertisements"`                   // 顯示的廣告
-	StartedAt    time.Time               `json:"started_at" db:"started_at"`
-	CompletedAt  *time.Time              `json:"completed_at" db:"completed_at"`
-	CreatedAt    time.Time               `json:"created_at" db:"created_at"`
+	ID                 string                   `json:"id" db:"id"` // UUID
+	UserID             int                      `json:"user_id" db:"user_id"`
+	GameType           GameType                 `json:"game_type" db:"game_type"`
+	Status             string                   `json:"status" db:"status"`                             // pending, playing, completed
+	ResultRestaurantID *int                     `json:"result_restaurant_id" db:"result_restaurant_id"` // 結果餐廳 ID
+	Result             *RestaurantWithDistance  `json:"result"`                                         // 遊戲結果
+	Restaurants        []RestaurantWithDistance `json:"restaurants"`                                    // 參與遊戲的餐廳列表
+	Advertisements     []Advertisement          `json:"advertisements"`                                 // 顯示的廣告
+	StartedAt          time.Time                `json:"started_at" db:"started_at"`
+	CompletedAt        *time.Time               `json:"completed_at" db:"completed_at"`
+	CreatedAt          time.Time                `json:"created_at" db:"created_at"`
 }
 
 // StartGameRequest 開始遊戲請求
@@ -39,15 +40,15 @@ type StartGameRequest struct {
 
 // GameResult 遊戲結果
 type GameResult struct {
-	SessionID      string                  `json:"session_id"`
+	SessionID          string                  `json:"session_id"`
 	SelectedRestaurant *RestaurantWithDistance `json:"selected_restaurant"`
-	ClickedAd      *Advertisement          `json:"clicked_ad,omitempty"` // 如果點擊了廣告
-	CompletedAt    time.Time               `json:"completed_at"`
+	ClickedAd          *Advertisement          `json:"clicked_ad,omitempty"` // 如果點擊了廣告
+	CompletedAt        time.Time               `json:"completed_at"`
 }
 
 // CompleteGameRequest 完成遊戲請求
 type CompleteGameRequest struct {
-	SessionID       string `json:"session_id" validate:"required"`
+	SessionID            string `json:"session_id" validate:"required"`
 	SelectedRestaurantID int    `json:"selected_restaurant_id" validate:"required"`
-	ClickedAdID     *int   `json:"clicked_ad_id,omitempty"` // 如果有點擊廣告
+	ClickedAdID          *int   `json:"clicked_ad_id,omitempty"` // 如果有點擊廣告
 }

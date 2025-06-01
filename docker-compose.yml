@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: postgres:15-alpine
+    container_name: food-roulette-postgres
+    environment:
+      POSTGRES_DB: food_roulette
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - food-roulette-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d food_roulette"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (用於快取和會話管理)
+  redis:
+    image: redis:7-alpine
+    container_name: food-roulette-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - food-roulette-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 應用程式服務
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: food-roulette-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/food_roulette?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - GOOGLE_API_KEY=your-google-api-key
+      - GIN_MODE=release
+      - LOG_LEVEL=info
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food-roulette-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # 資料庫遷移服務
+  migrate:
+    image: migrate/migrate
+    container_name: food-roulette-migrate
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://postgres:password@postgres:5432/food_roulette?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - food-roulette-network
+    restart: "no"
+
+  # pgAdmin (可選的資料庫管理界面)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: food-roulette-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - food-roulette-network
+    profiles:
+      - admin
+
+# 命名卷
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# 網路
+networks:
+  food-roulette-network:
+    driver: bridge

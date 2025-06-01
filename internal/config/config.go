@@ -3,15 +3,24 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 // Config 包含應用程式的所有配置
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Logger   LoggerConfig
+	Server        ServerConfig
+	Database      DatabaseConfig
+	Logger        LoggerConfig
+	Auth          AuthConfig
+	GoogleAPI     GoogleAPIConfig
+	Redis         RedisConfig
+	Upload        UploadConfig
+	CORS          CORSConfig
+	RateLimit     RateLimitConfig
+	Game          GameConfig
+	Advertisement AdvertisementConfig
 }
 
 // ServerConfig HTTP 伺服器配置
@@ -34,6 +43,54 @@ type DatabaseConfig struct {
 // LoggerConfig 日誌配置
 type LoggerConfig struct {
 	Level string
+}
+
+// AuthConfig JWT 認證配置
+type AuthConfig struct {
+	Secret    string
+	ExpiresIn string
+}
+
+// GoogleAPIConfig Google API 配置
+type GoogleAPIConfig struct {
+	PlacesAPIKey string
+}
+
+// RedisConfig Redis 配置
+type RedisConfig struct {
+	URL      string
+	Password string
+}
+
+// UploadConfig 檔案上傳配置
+type UploadConfig struct {
+	MaxSize      int64
+	AllowedTypes []string
+}
+
+// CORSConfig CORS 配置
+type CORSConfig struct {
+	AllowedOrigins []string
+	AllowedMethods []string
+	AllowedHeaders []string
+}
+
+// RateLimitConfig 速率限制配置
+type RateLimitConfig struct {
+	RequestsPerMinute int
+	Burst             int
+}
+
+// GameConfig 遊戲配置
+type GameConfig struct {
+	MaxRestaurantsPerRound int
+	SessionTimeoutMinutes  int
+}
+
+// AdvertisementConfig 廣告配置
+type AdvertisementConfig struct {
+	ViewCooldownSeconds  int
+	ClickCooldownSeconds int
 }
 
 // Load 載入配置，優先從環境變數讀取，其次從 .env 檔案
@@ -63,6 +120,38 @@ func Load() (*Config, error) {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
+		Auth: AuthConfig{
+			Secret:    getEnv("JWT_SECRET", "default_secret_change_this"),
+			ExpiresIn: getEnv("JWT_EXPIRES_IN", "24h"),
+		},
+		GoogleAPI: GoogleAPIConfig{
+			PlacesAPIKey: getEnv("GOOGLE_PLACES_API_KEY", ""),
+		},
+		Redis: RedisConfig{
+			URL:      getEnv("REDIS_URL", "redis://localhost:6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+		},
+		Upload: UploadConfig{
+			MaxSize:      getEnvInt64("UPLOAD_MAX_SIZE", 10485760), // 10MB
+			AllowedTypes: strings.Split(getEnv("UPLOAD_ALLOWED_TYPES", "image/jpeg,image/png,image/gif,image/webp"), ","),
+		},
+		CORS: CORSConfig{
+			AllowedOrigins: strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"), ","),
+			AllowedMethods: strings.Split(getEnv("CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,OPTIONS"), ","),
+			AllowedHeaders: strings.Split(getEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization"), ","),
+		},
+		RateLimit: RateLimitConfig{
+			RequestsPerMinute: getEnvInt("RATE_LIMIT_REQUESTS_PER_MINUTE", 60),
+			Burst:             getEnvInt("RATE_LIMIT_BURST", 10),
+		},
+		Game: GameConfig{
+			MaxRestaurantsPerRound: getEnvInt("GAME_MAX_RESTAURANTS_PER_ROUND", 10),
+			SessionTimeoutMinutes:  getEnvInt("GAME_SESSION_TIMEOUT_MINUTES", 30),
+		},
+		Advertisement: AdvertisementConfig{
+			ViewCooldownSeconds:  getEnvInt("AD_VIEW_COOLDOWN_SECONDS", 30),
+			ClickCooldownSeconds: getEnvInt("AD_CLICK_COOLDOWN_SECONDS", 60),
+		},
 	}
 
 	return config, nil
@@ -72,6 +161,26 @@ func Load() (*Config, error) {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+// getEnvInt 取得整數型環境變數，如果不存在或無效則使用預設值
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+// getEnvInt64 取得 int64 型環境變數，如果不存在或無效則使用預設值
+func getEnvInt64(key string, defaultValue int64) int64 {
+	if value := os.Getenv(key); value != "" {
+		if int64Value, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return int64Value
+		}
 	}
 	return defaultValue
 }

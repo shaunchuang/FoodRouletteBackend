@@ -29,7 +29,7 @@ func (h *RestaurantHandler) SearchNearby(c *gin.Context) {
 	if err := c.ShouldBindQuery(&params); err != nil {
 		logger.Error("搜尋餐廳請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
@@ -95,7 +95,7 @@ func (h *RestaurantHandler) AddToFavorites(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("新增最愛餐廳請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
@@ -174,7 +174,7 @@ func (h *RestaurantHandler) CreateRestaurant(c *gin.Context) {
 	if err := c.ShouldBindJSON(&restaurant); err != nil {
 		logger.Error("建立餐廳請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
@@ -188,7 +188,7 @@ func (h *RestaurantHandler) CreateRestaurant(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "建立餐廳成功",
+		"message":    "建立餐廳成功",
 		"restaurant": restaurant,
 	})
 }
@@ -237,23 +237,22 @@ func (h *RestaurantHandler) UpdateRestaurant(c *gin.Context) {
 	if err := c.ShouldBindJSON(&restaurant); err != nil {
 		logger.Error("更新餐廳請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
 	}
 
 	restaurant.ID = id
-	// TODO: 實作更新餐廳邏輯
-	// if err := h.restaurantUseCase.UpdateRestaurant(c.Request.Context(), &restaurant); err != nil {
-	//     c.JSON(http.StatusInternalServerError, gin.H{
-	//         "error": err.Error(),
-	//     })
-	//     return
-	// }
+	if err := h.restaurantUseCase.UpdateRestaurant(c.Request.Context(), &restaurant); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "更新餐廳成功",
+		"message":    "更新餐廳成功",
 		"restaurant": restaurant,
 	})
 }

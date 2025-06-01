@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/shaunchuang/food-roulette-backend/internal/delivery/http/handler"
 	"github.com/shaunchuang/food-roulette-backend/internal/delivery/http/middleware"
+	"github.com/shaunchuang/food-roulette-backend/internal/usecase"
 )
 
 // Router HTTP 路由器
@@ -32,7 +33,12 @@ func NewRouter(
 }
 
 // SetupRoutes 設定路由
-func (r *Router) SetupRoutes(engine *gin.Engine) {
+func (r *Router) SetupRoutes(engine *gin.Engine, authService middleware.AuthService, userService *usecase.UserUseCase) {
+	// 全域中介軟體
+	engine.Use(middleware.CORSMiddleware())
+	engine.Use(middleware.LoggerMiddleware())
+	engine.Use(middleware.ErrorMiddleware())
+
 	// 健康檢查
 	engine.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -60,11 +66,20 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 				restaurants.GET("/search", r.restaurantHandler.SearchNearby)
 				restaurants.GET("/:id", r.restaurantHandler.GetRestaurant)
 			}
+
+			// 廣告相關（公開瀏覽）
+			ads := public.Group("/advertisements")
+			{
+				ads.GET("/", r.adHandler.GetActiveAds)
+				ads.GET("/:id", r.adHandler.GetAdByID)
+				ads.POST("/view", r.adHandler.RecordView)   // 記錄廣告瀏覽
+				ads.POST("/click", r.adHandler.RecordClick) // 記錄廣告點擊
+			}
 		}
 
 		// 需要認證的路由
 		protected := v1.Group("/")
-		protected.Use(middleware.AuthMiddleware())
+		protected.Use(middleware.AuthMiddleware(authService))
 		{
 			// 使用者相關
 			users := protected.Group("/users")
@@ -90,17 +105,16 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 				games.GET("/history", r.gameHandler.GetGameHistory)
 			}
 
-			// 廣告相關
-			ads := protected.Group("/advertisements")
+			// 廣告統計（需要認證）
+			adStats := protected.Group("/advertisements")
 			{
-				ads.GET("/", r.adHandler.GetActiveAds)
-				ads.GET("/:id/statistics", r.adHandler.GetStatistics)
+				adStats.GET("/:id/statistics", r.adHandler.GetStatistics)
 			}
 		}
 
 		// 管理員路由（需要管理員權限）
 		admin := v1.Group("/admin")
-		admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
+		admin.Use(middleware.AuthMiddleware(authService), middleware.AdminMiddleware(userService))
 		{
 			// 餐廳管理
 			adminRestaurants := admin.Group("/restaurants")
@@ -120,13 +134,4 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 			}
 		}
 	}
-
-	// CORS 中介軟體
-	engine.Use(middleware.CORSMiddleware())
-
-	// 錯誤處理中介軟體
-	engine.Use(middleware.ErrorMiddleware())
-
-	// 請求日誌中介軟體
-	engine.Use(middleware.LoggerMiddleware())
 }

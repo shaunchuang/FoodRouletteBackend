@@ -46,6 +46,7 @@ type AdvertisementRepository interface {
 	Create(ctx context.Context, ad *domain.Advertisement) error
 	GetByID(ctx context.Context, id int) (*domain.Advertisement, error)
 	GetActiveAds(ctx context.Context, limit int) ([]domain.Advertisement, error)
+	GetAll(ctx context.Context, limit, offset int) ([]domain.Advertisement, error)
 	Update(ctx context.Context, ad *domain.Advertisement) error
 	RecordView(ctx context.Context, view *domain.AdView) error
 	RecordClick(ctx context.Context, click *domain.AdClick) error
@@ -64,4 +65,13 @@ type AuthService interface {
 	VerifyPassword(hashedPassword, password string) bool
 	GenerateToken(userID int) (string, error)
 	ValidateToken(token string) (int, error)
+}
+
+// UserService 使用者服務介面
+type UserService interface {
+	Register(ctx context.Context, req *domain.CreateUserRequest) (*domain.User, error)
+	Login(ctx context.Context, req *domain.LoginRequest) (string, error)
+	GetProfile(ctx context.Context, userID int) (*domain.User, error)
+	UpdateLocation(ctx context.Context, userID int, req *domain.UpdateLocationRequest) error
+	GetLocation(ctx context.Context, userID int) (*domain.UserLocation, error)
 }

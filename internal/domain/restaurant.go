@@ -6,19 +6,19 @@ import (
 
 // Restaurant 餐廳實體
 type Restaurant struct {
-	ID          int     `json:"id" db:"id"`
-	Name        string  `json:"name" db:"name" validate:"required,max=100"`
-	Address     string  `json:"address" db:"address" validate:"required,max=255"`
-	Latitude    float64 `json:"latitude" db:"latitude" validate:"required,latitude"`
-	Longitude   float64 `json:"longitude" db:"longitude" validate:"required,longitude"`
-	Phone       string  `json:"phone" db:"phone"`
-	Rating      float32 `json:"rating" db:"rating" validate:"min=0,max=5"`
-	PriceLevel  int     `json:"price_level" db:"price_level" validate:"min=1,max=4"` // 1-4 價位等級
-	Cuisine     string  `json:"cuisine" db:"cuisine"`                                 // 料理類型
-	IsActive    bool    `json:"is_active" db:"is_active"`
-	GoogleID    string  `json:"google_id" db:"google_id"`    // Google Places ID
-	ImageURL    string  `json:"image_url" db:"image_url"`    // 餐廳圖片
-	Description string  `json:"description" db:"description"` // 餐廳描述
+	ID          int       `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name" validate:"required,max=100"`
+	Address     string    `json:"address" db:"address" validate:"required,max=255"`
+	Latitude    float64   `json:"latitude" db:"latitude" validate:"required,latitude"`
+	Longitude   float64   `json:"longitude" db:"longitude" validate:"required,longitude"`
+	Phone       string    `json:"phone" db:"phone"`
+	Rating      float32   `json:"rating" db:"rating" validate:"min=0,max=5"`
+	PriceLevel  int       `json:"price_level" db:"price_level" validate:"min=1,max=4"` // 1-4 價位等級
+	Cuisine     string    `json:"cuisine" db:"cuisine"`                                // 料理類型
+	IsActive    bool      `json:"is_active" db:"is_active"`
+	GoogleID    string    `json:"google_id" db:"google_id"`     // Google Places ID
+	ImageURL    string    `json:"image_url" db:"image_url"`     // 餐廳圖片
+	Description string    `json:"description" db:"description"` // 餐廳描述
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -30,6 +30,24 @@ type FavoriteRestaurant struct {
 	RestaurantID int       `json:"restaurant_id" db:"restaurant_id"`
 	Notes        string    `json:"notes" db:"notes"` // 使用者備註
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+}
+
+// FavoriteRestaurantWithDetails 包含餐廳詳細信息的最愛餐廳
+type FavoriteRestaurantWithDetails struct {
+	ID                   int       `json:"id" db:"id"`
+	UserID               int       `json:"user_id" db:"user_id"`
+	RestaurantID         int       `json:"restaurant_id" db:"restaurant_id"`
+	Notes                string    `json:"notes" db:"notes"`
+	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	RestaurantName       string    `json:"restaurant_name" db:"name"`
+	RestaurantAddress    string    `json:"restaurant_address" db:"address"`
+	RestaurantLatitude   float64   `json:"restaurant_latitude" db:"latitude"`
+	RestaurantLongitude  float64   `json:"restaurant_longitude" db:"longitude"`
+	RestaurantPhone      string    `json:"restaurant_phone" db:"phone"`
+	RestaurantRating     float32   `json:"restaurant_rating" db:"rating"`
+	RestaurantPriceLevel int       `json:"restaurant_price_level" db:"price_level"`
+	RestaurantCuisine    string    `json:"restaurant_cuisine" db:"cuisine"`
+	RestaurantImageURL   string    `json:"restaurant_image_url" db:"image_url"`
 }
 
 // RestaurantSearchParams 餐廳搜尋參數
