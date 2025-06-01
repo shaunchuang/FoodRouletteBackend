@@ -61,7 +61,7 @@ var (
 // 外部 API 錯誤
 var (
 	ErrExternalAPIFailed = errors.New("外部 API 請求失敗")
-	ErrGoogleAPIFailed   = errors.New("Google API 請求失敗")
+	ErrGoogleAPIFailed   = errors.New("google API 請求失敗")
 	ErrAPIQuotaExceeded  = errors.New("API 配額已用完")
 )
 
