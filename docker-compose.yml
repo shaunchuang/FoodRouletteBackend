@@ -8,13 +8,13 @@ services:
     environment:
       POSTGRES_DB: food_roulette
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: s0h9a2u0n
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      - "30432:5432"
     networks:
       - food-roulette-network
     healthcheck:

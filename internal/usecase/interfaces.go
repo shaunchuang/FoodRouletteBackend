@@ -11,9 +11,12 @@ type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
 	GetByID(ctx context.Context, id int) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
+	GetByProviderID(ctx context.Context, provider, providerID string) (*domain.User, error)
 	Update(ctx context.Context, user *domain.User) error
+	UpdateProviderInfo(ctx context.Context, userID int, provider, providerID string) error
 	UpdateLocation(ctx context.Context, userID int, location *domain.UserLocation) error
 	GetLocation(ctx context.Context, userID int) (*domain.UserLocation, error)
+	CreateOAuthUser(ctx context.Context, user *domain.User) error
 }
 
 // RestaurantRepository 餐廳資料庫操作介面
@@ -63,14 +66,17 @@ type ExternalAPIService interface {
 type AuthService interface {
 	HashPassword(password string) (string, error)
 	VerifyPassword(hashedPassword, password string) bool
-	GenerateToken(userID int) (string, error)
+	GenerateToken(userID int, email, username, role, provider string) (string, error)
 	ValidateToken(token string) (int, error)
+	VerifyGoogleToken(idToken string) (*domain.OAuthUserInfo, error)
+	VerifyAppleToken(idToken string) (*domain.OAuthUserInfo, error)
 }
 
 // UserService 使用者服務介面
 type UserService interface {
 	Register(ctx context.Context, req *domain.CreateUserRequest) (*domain.User, error)
-	Login(ctx context.Context, req *domain.LoginRequest) (string, error)
+	Login(ctx context.Context, req *domain.LoginRequest) (*domain.User, string, error)
+	OAuthLogin(ctx context.Context, userInfo *domain.OAuthUserInfo) (*domain.User, string, error)
 	GetProfile(ctx context.Context, userID int) (*domain.User, error)
 	UpdateLocation(ctx context.Context, userID int, req *domain.UpdateLocationRequest) error
 	GetLocation(ctx context.Context, userID int) (*domain.UserLocation, error)

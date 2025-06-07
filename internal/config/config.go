@@ -15,6 +15,7 @@ type Config struct {
 	Logger        LoggerConfig
 	Auth          AuthConfig
 	GoogleAPI     GoogleAPIConfig
+	AppleOAuth    AppleOAuthConfig
 	Redis         RedisConfig
 	Upload        UploadConfig
 	CORS          CORSConfig
@@ -54,6 +55,16 @@ type AuthConfig struct {
 // GoogleAPIConfig Google API 配置
 type GoogleAPIConfig struct {
 	PlacesAPIKey string
+	ClientID     string
+	ClientSecret string
+}
+
+// AppleOAuthConfig Apple OAuth 配置
+type AppleOAuthConfig struct {
+	ClientID   string
+	TeamID     string
+	KeyID      string
+	PrivateKey string
 }
 
 // RedisConfig Redis 配置
@@ -126,6 +137,14 @@ func Load() (*Config, error) {
 		},
 		GoogleAPI: GoogleAPIConfig{
 			PlacesAPIKey: getEnv("GOOGLE_PLACES_API_KEY", ""),
+			ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+		},
+		AppleOAuth: AppleOAuthConfig{
+			ClientID:   getEnv("APPLE_CLIENT_ID", ""),
+			TeamID:     getEnv("APPLE_TEAM_ID", ""),
+			KeyID:      getEnv("APPLE_KEY_ID", ""),
+			PrivateKey: getEnv("APPLE_PRIVATE_KEY", ""),
 		},
 		Redis: RedisConfig{
 			URL:      getEnv("REDIS_URL", "redis://localhost:6379"),

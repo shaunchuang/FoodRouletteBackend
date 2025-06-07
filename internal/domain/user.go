@@ -22,20 +22,32 @@ const (
 	UserStatusSuspended UserStatus = "suspended"
 )
 
+// UserProvider 使用者登入提供者類型
+type UserProvider string
+
+const (
+	UserProviderLocal  UserProvider = "local"
+	UserProviderGoogle UserProvider = "google"
+	UserProviderApple  UserProvider = "apple"
+)
+
 // User 使用者實體
 type User struct {
-	ID                  int        `json:"id" db:"id"`
-	Email               string     `json:"email" db:"email" validate:"required,email"`
-	Username            string     `json:"username" db:"username" validate:"required,min=3,max=50"`
-	Password            string     `json:"-" db:"password"` // 不在 JSON 中顯示密碼
-	Role                UserRole   `json:"role" db:"role"`
-	Status              UserStatus `json:"status" db:"status"`
-	EmailVerified       bool       `json:"email_verified" db:"email_verified"`
-	LastLoginAt         *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
-	FailedLoginAttempts int        `json:"-" db:"failed_login_attempts"` // 不在 JSON 中顯示
-	LockedUntil         *time.Time `json:"-" db:"locked_until"`          // 不在 JSON 中顯示
-	CreatedAt           time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at" db:"updated_at"`
+	ID                  int          `json:"id" db:"id"`
+	Email               string       `json:"email" db:"email" validate:"required,email"`
+	Username            string       `json:"username" db:"username" validate:"required,min=3,max=50"`
+	Password            *string      `json:"-" db:"password"` // 第三方登入時可為 NULL
+	Provider            UserProvider `json:"provider" db:"provider"`
+	ProviderID          *string      `json:"provider_id,omitempty" db:"provider_id"`
+	Avatar              *string      `json:"avatar,omitempty" db:"avatar"`
+	Role                UserRole     `json:"role" db:"role"`
+	Status              UserStatus   `json:"status" db:"status"`
+	EmailVerified       bool         `json:"email_verified" db:"email_verified"`
+	LastLoginAt         *time.Time   `json:"last_login_at,omitempty" db:"last_login_at"`
+	FailedLoginAttempts int          `json:"-" db:"failed_login_attempts"` // 不在 JSON 中顯示
+	LockedUntil         *time.Time   `json:"-" db:"locked_until"`          // 不在 JSON 中顯示
+	CreatedAt           time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time    `json:"updated_at" db:"updated_at"`
 }
 
 // IsAdmin 檢查使用者是否為管理員
@@ -91,4 +103,18 @@ type LoginRequest struct {
 type UpdateLocationRequest struct {
 	Latitude  float64 `json:"latitude" validate:"required,latitude"`
 	Longitude float64 `json:"longitude" validate:"required,longitude"`
+}
+
+// OAuthLoginRequest OAuth 登入請求
+type OAuthLoginRequest struct {
+	IDToken string `json:"id_token" validate:"required"`
+}
+
+// OAuthUserInfo OAuth 使用者資訊
+type OAuthUserInfo struct {
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	Picture  string `json:"picture"`
+	Subject  string `json:"sub"` // provider_id
+	Provider string `json:"provider"`
 }

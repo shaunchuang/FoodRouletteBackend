@@ -73,12 +73,13 @@ func main() {
 
 	// 初始化 Handlers
 	userHandler := handler.NewUserHandler(userUseCase)
+	authHandler := handler.NewAuthHandler(userUseCase, authService)
 	restaurantHandler := handler.NewRestaurantHandler(restaurantUseCase)
 	gameHandler := handler.NewGameHandler(gameUseCase)
 	adHandler := handler.NewAdvertisementHandler(adUseCase)
 
 	// 初始化路由器
-	router := http.NewRouter(userHandler, restaurantHandler, gameHandler, adHandler)
+	router := http.NewRouter(userHandler, authHandler, restaurantHandler, gameHandler, adHandler)
 	router.SetupRoutes(engine, authService, userUseCase)
 
 	// 啟動伺服器

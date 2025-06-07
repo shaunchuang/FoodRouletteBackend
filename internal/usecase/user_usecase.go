@@ -40,12 +40,17 @@ func (uc *UserUseCase) Register(ctx context.Context, req *domain.CreateUserReque
 	}
 
 	// 建立使用者
+	hashedPasswordPtr := &hashedPassword
 	user := &domain.User{
-		Email:     req.Email,
-		Username:  req.Username,
-		Password:  hashedPassword,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Email:         req.Email,
+		Username:      req.Username,
+		Password:      hashedPasswordPtr,
+		Provider:      domain.UserProviderLocal,
+		Role:          domain.UserRoleUser,
+		Status:        domain.UserStatusActive,
+		EmailVerified: false,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
@@ -58,29 +63,41 @@ func (uc *UserUseCase) Register(ctx context.Context, req *domain.CreateUserReque
 }
 
 // Login 使用者登入
-func (uc *UserUseCase) Login(ctx context.Context, req *domain.LoginRequest) (string, error) {
+func (uc *UserUseCase) Login(ctx context.Context, req *domain.LoginRequest) (*domain.User, string, error) {
 	// 根據信箱查找使用者
 	user, err := uc.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		logger.Error("查找使用者失敗", zap.Error(err))
-		return "", errors.New("電子郵件或密碼錯誤")
+		return nil, "", errors.New("電子郵件或密碼錯誤")
+	}
+
+	// 檢查密碼是否存在（第三方登入的使用者可能沒有密碼）
+	if user.Password == nil {
+		logger.Warn("嘗試用密碼登入 OAuth 帳號", zap.String("email", req.Email))
+		return nil, "", errors.New("此帳號使用第三方登入，請使用相應的登入方式")
 	}
 
 	// 驗證密碼
-	if !uc.authSvc.VerifyPassword(user.Password, req.Password) {
+	if !uc.authSvc.VerifyPassword(*user.Password, req.Password) {
 		logger.Warn("密碼驗證失敗", zap.String("email", req.Email))
-		return "", errors.New("電子郵件或密碼錯誤")
+		return nil, "", errors.New("電子郵件或密碼錯誤")
 	}
 
 	// 生成 JWT Token
-	token, err := uc.authSvc.GenerateToken(user.ID)
+	token, err := uc.authSvc.GenerateToken(
+		user.ID,
+		user.Email,
+		user.Username,
+		string(user.Role),
+		string(user.Provider),
+	)
 	if err != nil {
 		logger.Error("生成 Token 失敗", zap.Error(err))
-		return "", errors.New("登入失敗")
+		return nil, "", errors.New("登入失敗")
 	}
 
 	logger.Info("使用者登入成功", zap.String("email", user.Email))
-	return token, nil
+	return user, token, nil
 }
 
 // GetProfile 取得使用者資料
@@ -121,4 +138,76 @@ func (uc *UserUseCase) GetLocation(ctx context.Context, userID int) (*domain.Use
 	}
 
 	return location, nil
+}
+
+// OAuthLogin OAuth 第三方登入
+func (uc *UserUseCase) OAuthLogin(ctx context.Context, userInfo *domain.OAuthUserInfo) (*domain.User, string, error) {
+	// 首先嘗試根據 email 查找現有使用者
+	existingUser, err := uc.userRepo.GetByEmail(ctx, userInfo.Email)
+	if err != nil && err.Error() != "使用者不存在" {
+		logger.Error("查詢使用者失敗", zap.Error(err))
+		return nil, "", errors.New("登入失敗")
+	}
+
+	var user *domain.User
+
+	if existingUser != nil {
+		// 使用者已存在，更新 Provider 資訊
+		if err := uc.userRepo.UpdateProviderInfo(ctx, existingUser.ID, userInfo.Provider, userInfo.Subject); err != nil {
+			logger.Error("更新 Provider 資訊失敗", zap.Error(err))
+			return nil, "", errors.New("登入失敗")
+		}
+
+		// 重新取得使用者資料
+		user, err = uc.userRepo.GetByID(ctx, existingUser.ID)
+		if err != nil {
+			logger.Error("取得使用者資料失敗", zap.Error(err))
+			return nil, "", errors.New("登入失敗")
+		}
+	} else {
+		// 建立新的 OAuth 使用者
+		newUser := &domain.User{
+			Email:         userInfo.Email,
+			Username:      userInfo.Name,
+			Provider:      domain.UserProvider(userInfo.Provider),
+			ProviderID:    &userInfo.Subject,
+			EmailVerified: true, // OAuth 使用者預設已驗證 email
+			Role:          domain.UserRoleUser,
+			Status:        domain.UserStatusActive,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		}
+
+		// 設定頭像 URL
+		if userInfo.Picture != "" {
+			newUser.Avatar = &userInfo.Picture
+		}
+
+		if err := uc.userRepo.CreateOAuthUser(ctx, newUser); err != nil {
+			logger.Error("建立 OAuth 使用者失敗", zap.Error(err))
+			return nil, "", errors.New("登入失敗")
+		}
+		user = newUser
+	}
+
+	// 生成 JWT Token
+	token, err := uc.authSvc.GenerateToken(
+		user.ID,
+		user.Email,
+		user.Username,
+		string(user.Role),
+		string(user.Provider),
+	)
+	if err != nil {
+		logger.Error("生成 Token 失敗", zap.Error(err))
+		return nil, "", errors.New("登入失敗")
+	}
+
+	logger.Info("OAuth 登入成功",
+		zap.Int("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("provider", userInfo.Provider),
+	)
+
+	return user, token, nil
 }

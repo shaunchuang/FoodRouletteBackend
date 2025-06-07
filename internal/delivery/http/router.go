@@ -12,6 +12,7 @@ import (
 // Router HTTP 路由器
 type Router struct {
 	userHandler       *handler.UserHandler
+	authHandler       *handler.AuthHandler
 	restaurantHandler *handler.RestaurantHandler
 	gameHandler       *handler.GameHandler
 	adHandler         *handler.AdvertisementHandler
@@ -20,12 +21,14 @@ type Router struct {
 // NewRouter 建立新的路由器
 func NewRouter(
 	userHandler *handler.UserHandler,
+	authHandler *handler.AuthHandler,
 	restaurantHandler *handler.RestaurantHandler,
 	gameHandler *handler.GameHandler,
 	adHandler *handler.AdvertisementHandler,
 ) *Router {
 	return &Router{
 		userHandler:       userHandler,
+		authHandler:       authHandler,
 		restaurantHandler: restaurantHandler,
 		gameHandler:       gameHandler,
 		adHandler:         adHandler,
@@ -58,6 +61,8 @@ func (r *Router) SetupRoutes(engine *gin.Engine, authService middleware.AuthServ
 			{
 				auth.POST("/register", r.userHandler.Register)
 				auth.POST("/login", r.userHandler.Login)
+				auth.POST("/google", r.authHandler.GoogleLogin)
+				auth.POST("/apple", r.authHandler.AppleLogin)
 			}
 
 			// 餐廳相關（公開）

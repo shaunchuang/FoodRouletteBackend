@@ -28,7 +28,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("註冊請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
@@ -58,23 +58,41 @@ func (h *UserHandler) Login(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("登入請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
-			"details": err.Error(),
+			"success": false,
+			"error": gin.H{
+				"code":    "INVALID_REQUEST",
+				"message": "請求參數錯誤",
+			},
 		})
 		return
 	}
 
-	token, err := h.userUseCase.Login(c.Request.Context(), &req)
+	user, token, err := h.userUseCase.Login(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": err.Error(),
+			"success": false,
+			"error": gin.H{
+				"code":    "LOGIN_FAILED",
+				"message": err.Error(),
+			},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "登入成功",
-		"token":   token,
+		"success": true,
+		"data": gin.H{
+			"token": token,
+			"user": gin.H{
+				"id":       user.ID,
+				"email":    user.Email,
+				"username": user.Username,
+				"avatar":   user.Avatar,
+				"role":     user.Role,
+				"status":   user.Status,
+				"provider": user.Provider,
+			},
+		},
 	})
 }
 
@@ -121,7 +139,7 @@ func (h *UserHandler) UpdateLocation(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("更新位置請求參數錯誤", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "請求參數錯誤",
+			"error":   "請求參數錯誤",
 			"details": err.Error(),
 		})
 		return
